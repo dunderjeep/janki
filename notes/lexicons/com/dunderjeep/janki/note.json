@@ -1,0 +1,218 @@
+{
+  "lexicon": 1,
+  "id": "com.dunderjeep.janki.note",
+  "description": "A note: one outline of org-style headings, the way one .org file holds one. Private in janki for now; shaped so it can be published to a PDS later.",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": [
+          "title",
+          "headings",
+          "createdAt"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 3000,
+            "description": "The note's own title (an org file's #+title)."
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 1024,
+            "description": "Where the note sits in its owner's folder tree, as a relative path such as 'daily/2026-11-15.org'. Used for folders and export."
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 640
+            },
+            "description": "Tags on the whole note (#+filetags)."
+          },
+          "properties": {
+            "type": "array",
+            "items": {
+              "type": "ref",
+              "ref": "#property"
+            },
+            "description": "The note's own property drawer, in order. An ID property makes the note linkable."
+          },
+          "body": {
+            "type": "string",
+            "description": "Org-markup text before the first heading. Absent when there is none; an empty string is one empty line."
+          },
+          "headings": {
+            "type": "array",
+            "items": {
+              "type": "ref",
+              "ref": "#heading"
+            },
+            "description": "Every heading in document order; nesting is carried by level."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "datetime"
+          }
+        }
+      }
+    },
+    "heading": {
+      "type": "object",
+      "required": [
+        "level",
+        "title"
+      ],
+      "properties": {
+        "level": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "1 for a top heading, 2 under it, and so on."
+        },
+        "todo": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "A TODO keyword: TODO, NEXT, DONE, …"
+        },
+        "priority": {
+          "type": "string",
+          "maxLength": 1
+        },
+        "title": {
+          "type": "string",
+          "description": "The heading text, in org markup; may hold links."
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 640
+          }
+        },
+        "scheduled": {
+          "type": "ref",
+          "ref": "#timestamp"
+        },
+        "deadline": {
+          "type": "ref",
+          "ref": "#timestamp"
+        },
+        "closed": {
+          "type": "ref",
+          "ref": "#timestamp"
+        },
+        "properties": {
+          "type": "array",
+          "items": {
+            "type": "ref",
+            "ref": "#property"
+          },
+          "description": "The heading's property drawer, in order. An ID property makes it linkable."
+        },
+        "body": {
+          "type": "string",
+          "description": "Org-markup text under the heading, up to the next one. Absent when there is none."
+        },
+        "attachments": {
+          "type": "array",
+          "items": {
+            "type": "ref",
+            "ref": "#attachment"
+          },
+          "description": "Files attached to this heading. In org text, :ATTACHMENT: lines in its drawer."
+        }
+      }
+    },
+    "property": {
+      "type": "object",
+      "required": [
+        "key",
+        "value"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "timestamp": {
+      "type": "object",
+      "required": [
+        "date",
+        "active"
+      ],
+      "description": "An org timestamp, such as <2026-11-15 Sun 09:00 ++1w -2d>.",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Active (<…>) timestamps show in the agenda; inactive ([…]) ones do not."
+        },
+        "date": {
+          "type": "string",
+          "maxLength": 10,
+          "description": "YYYY-MM-DD."
+        },
+        "day": {
+          "type": "string",
+          "maxLength": 16,
+          "description": "The day name as written, such as 'Sun'."
+        },
+        "time": {
+          "type": "string",
+          "maxLength": 5,
+          "description": "HH:MM."
+        },
+        "endTime": {
+          "type": "string",
+          "maxLength": 5,
+          "description": "HH:MM, for a time range within the day."
+        },
+        "repeat": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "A repeater: +1w, ++1d, .+1m, optionally with a habit range such as .+2d/4d."
+        },
+        "warning": {
+          "type": "string",
+          "maxLength": 16,
+          "description": "A warning or delay period: -2d, --1d."
+        }
+      }
+    },
+    "attachment": {
+      "type": "object",
+      "required": [
+        "name",
+        "blob",
+        "addedAt"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "blob": {
+          "type": "blob",
+          "accept": [
+            "*/*"
+          ],
+          "maxSize": 52428800
+        },
+        "addedAt": {
+          "type": "string",
+          "format": "datetime"
+        }
+      }
+    }
+  }
+}

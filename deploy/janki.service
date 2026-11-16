@@ -1,0 +1,63 @@
+[Unit]
+Description=janki — Next.js production server
+Documentation=file://@REPO@/deploy/README.md
+# The Docker stack (postgres/directus/minio) is a system-level concern and
+# already comes back on boot via `restart: unless-stopped` + the enabled
+# snap.docker.dockerd.service. We can't order a *user* unit against it, so we
+# just retry until Postgres answers.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=@REPO@/app
+
+# Call Next's binary directly rather than going through `npm run start` — that
+# avoids keeping an extra npm/sh process resident for the life of the server.
+# .env.local is read by Next itself at startup, so no EnvironmentFile needed.
+# npm workspaces hoist next to the repo root (janki/node_modules).
+ExecStart=/usr/bin/node ../node_modules/next/dist/bin/next start --port 3001
+# Re-assert the tailnet proxy on every start: other projects' `tailscale serve`
+# calls can replace it. 8443, not 443 — 443 is left free for Local (WordPress).
+# Leading '-' so a missing/stopped tailscaled never blocks janki itself.
+ExecStartPost=-/usr/bin/tailscale serve --bg --https=8443 http://127.0.0.1:3001
+Environment=NODE_ENV=production
+Environment=NODE_OPTIONS=--max-old-space-size=512
+# Serve from a build directory that `next dev` never touches. Sharing `.next`
+# lets a dev server rewrite the manifests out from under this one.
+Environment=NEXT_DIST_DIR=.next-prod
+# Auth.js v5 refuses unrecognised Hosts unless told to trust the proxy/host.
+# `next dev` grants this implicitly; production does not, so /api/auth/* throws
+# UntrustedHost without it. Safe here — this only ever serves localhost.
+Environment=AUTH_TRUST_HOST=true
+# Reached from the iPad/iPhone through `tailscale serve`, which rewrites Host to
+# localhost — so Auth.js would hand Google a localhost callback. Pin the public
+# origin instead; Google won't accept a private-IP one anyway. Sign in here, not
+# on localhost:3001: the session cookie belongs to this origin. install.sh fills
+# this from JANKI_AUTH_URL (deploy/local.env), or drops the line when unset.
+Environment=AUTH_URL=@AUTH_URL@
+
+# Keep retrying: on a cold boot this will lose the race against Docker bringing
+# Postgres up, and each retry is cheap.
+Restart=on-failure
+RestartSec=10s
+StartLimitIntervalSec=0
+
+# Resource ceilings — the whole point of running it this way. MemoryHigh
+# throttles and reclaims; MemoryMax is the hard OOM backstop above it.
+MemoryHigh=512M
+MemoryMax=768M
+CPUQuota=100%
+CPUWeight=50
+
+# Yield to the interactive session — this is a background service, it should
+# lose to Emacs and the editor when things get tight.
+Nice=5
+IOWeight=50
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=janki
+
+[Install]
+WantedBy=default.target

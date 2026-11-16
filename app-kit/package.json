@@ -1,0 +1,27 @@
+{
+  "name": "@janki/app-kit",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "The contract between a janki app and the shell it runs in: one host per app, and a single-user standalone host on PGlite.",
+  "type": "module",
+  "exports": {
+    "./api": "./src/api.ts",
+    "./host": "./src/host.ts",
+    "./standalone": "./src/standalone.ts"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.11",
+    "drizzle-orm": "^0.45.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "peerDependencies": {
+    "next": ">=15"
+  }
+}

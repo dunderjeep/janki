@@ -1,0 +1,44 @@
+[Desktop Entry]
+Type=Application
+Name=janki
+GenericName=Spaced Repetition
+Comment=Open janki (starts the server and database if they aren't running)
+Icon=janki
+Exec=@HOME@/.local/bin/janki-ctl open
+Terminal=false
+Categories=Education;
+Keywords=srs;flashcards;study;anki;
+StartupNotify=true
+Actions=Phone;Servers;Status;Restart;Logs;Rebuild;StopServer;StopAll;
+
+[Desktop Action Phone]
+Name=Fix phone access
+Exec=@HOME@/.local/bin/janki-ctl phone
+
+[Desktop Action Status]
+Name=Status
+Exec=@HOME@/.local/bin/janki-ctl status
+
+[Desktop Action Restart]
+Name=Restart server
+Exec=@HOME@/.local/bin/janki-ctl restart
+
+[Desktop Action Logs]
+Name=View logs
+Exec=@HOME@/.local/bin/janki-ctl logs
+
+[Desktop Action Rebuild]
+Name=Rebuild after code changes
+Exec=@HOME@/.local/bin/janki-ctl rebuild
+
+[Desktop Action StopServer]
+Name=Stop server
+Exec=@HOME@/.local/bin/janki-ctl stop
+
+[Desktop Action StopAll]
+Name=Stop everything (free RAM)
+Exec=@HOME@/.local/bin/janki-ctl stop-all
+
+[Desktop Action Servers]
+Name=Dev servers (all projects)
+Exec=@HOME@/.local/bin/janki-ctl servers

@@ -1,0 +1,61 @@
+# Environment — never commit secrets
+.env
+.env.local
+.env.*.local
+# .env.codespaces is intentionally committed (dev-only defaults, no real secrets)
+# .env.example is intentionally committed (template)
+
+# Next.js
+app/.next/
+app/out/
+app/node_modules/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Docker volumes (if bind-mounted locally)
+postgres_data/
+pgadmin_data/
+
+# Reference books — kept locally, not in history (copyrighted, ~8 MB)
+books/
+How to Prove It*/
+
+# Personal bank and card statements — real account data, never in history
+assets/banking and credit card statements/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/settings.json
+.idea/
+*.swp
+
+# temp files
+temp/
+# Personal-only apps, never published (FINN alerts: FINN's terms forbid
+# systematic use of its content without consent; this is for my own use)
+app/src/lib/finn/
+app/src/app/finn/
+app/src/app/api/finn/
+
+# Personal documents and scratch files, never published
+docs/resume.pdf
+docs/JobAdvertisement_*.pdf
+docs/application_text.txt
+images/
+*.session.sql
+__pycache__/
+*.pyc
+
+# Claude Code's local permissions (machine paths)
+.claude/settings.json
+
+# Private scripts and notes that only make sense for this install
+private/
+
+# Machine-specific deploy settings
+deploy/local.env

@@ -1,0 +1,179 @@
+#!/usr/bin/env python3
+"""phone-access -- check, and optionally repair, reaching janki from a phone.
+
+The route is: phone -> Tailscale -> `tailscale serve` on :8443 -> janki on :3001.
+This tests each link from the laptop's side, so a failure names the link.
+
+  phone-access            check only, print a readable report
+  phone-access --repair   put right what the laptop can, then check
+  phone-access --json     print the result as JSON, for the settings page
+
+Nothing here can switch Tailscale on inside the phone. That is why the report
+ends with what to look at on the phone when the laptop's side is all fine.
+"""
+import json
+import os
+import subprocess
+import sys
+import time
+
+PORT = int(os.environ.get("JANKI_PORT", "3001"))
+TAILNET_PORT = 8443
+LOCAL_URL = f"http://127.0.0.1:{PORT}"
+UNIT = "janki"
+REPO = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+PHONE_OSES = {"iOS", "android"}
+
+
+def run(*args, timeout=20):
+    try:
+        done = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+        return done.returncode, (done.stdout + done.stderr).strip()
+    except (subprocess.TimeoutExpired, FileNotFoundError) as err:
+        return 1, str(err)
+
+
+def tailscale_status():
+    code, out = run("tailscale", "status", "--json")
+    if code != 0:
+        return None
+    try:
+        return json.loads(out)
+    except ValueError:
+        return None
+
+
+def http_code(url):
+    # Certificate checking stays on: a bad certificate stops Safari too.
+    _, out = run("curl", "-s", "-o", "/dev/null", "-m", "8", "-w", "%{http_code}", url, timeout=12)
+    return out
+
+
+def answers(code):
+    return code[:1] in ("2", "3")
+
+
+def server_active():
+    return run("systemctl", "--user", "is-active", "--quiet", UNIT)[0] == 0
+
+
+def repair(status):
+    done = []
+    state = status.get("BackendState") if status else None
+    if state == "Stopped":
+        code, out = run("tailscale", "up", timeout=30)
+        done.append("Started Tailscale" if code == 0 else f"Could not start Tailscale: {out[:200]}")
+
+    if not server_active():
+        run("docker", "compose", "--project-directory", REPO, "up", "-d", timeout=120)
+        run("systemctl", "--user", "start", UNIT, timeout=30)
+        for _ in range(45):
+            if answers(http_code(f"{LOCAL_URL}/login")):
+                break
+            time.sleep(1)
+        done.append("Started the janki server")
+
+    # Other projects' `tailscale serve` calls can replace this, so always set it.
+    code, out = run("tailscale", "serve", "--bg", f"--https={TAILNET_PORT}", LOCAL_URL, timeout=30)
+    done.append("Re-applied the Tailscale route to janki" if code == 0 else f"Could not set the Tailscale route: {out[:200]}")
+    return done
+
+
+def phones(status):
+    found = []
+    for peer in (status.get("Peer") or {}).values():
+        if peer.get("OS") not in PHONE_OSES:
+            continue
+        name = (peer.get("DNSName") or peer.get("HostName") or "device").split(".")[0]
+        address = (peer.get("TailscaleIPs") or [""])[0]
+        code, out = run("tailscale", "ping", "-c", "1", "--timeout", "3s", address, timeout=8)
+        found.append({"name": name, "answered": code == 0 and "pong" in out})
+    return sorted(found, key=lambda d: d["name"])
+
+
+def check(status):
+    checks = []
+    state = status.get("BackendState") if status else "unavailable"
+    connected = state == "Running"
+    checks.append({
+        "name": "Tailscale on this laptop",
+        "ok": connected,
+        "detail": "Connected" if connected else f"State: {state}. "
+        + ("Sign in to Tailscale on the laptop." if state == "NeedsLogin" else "Try Repair."),
+    })
+
+    local = http_code(f"{LOCAL_URL}/login")
+    checks.append({
+        "name": "janki server",
+        "ok": answers(local),
+        "detail": f"Answering on port {PORT}" if answers(local) else f"Not answering (got {local or 'nothing'})",
+    })
+
+    _, served = run("tailscale", "serve", "status")
+    routed = f":{TAILNET_PORT}" in served and f"127.0.0.1:{PORT}" in served
+    checks.append({
+        "name": "Tailscale route to janki",
+        "ok": routed,
+        "detail": f"Port {TAILNET_PORT} leads to janki" if routed else f"Port {TAILNET_PORT} does not lead to janki",
+    })
+
+    url = None
+    if connected:
+        host = (status.get("Self") or {}).get("DNSName", "").rstrip(".")
+        url = f"https://{host}:{TAILNET_PORT}"
+        remote = http_code(f"{url}/login")
+        checks.append({
+            "name": "Phone address, tested from the laptop",
+            "ok": answers(remote),
+            "detail": "Loads, with a valid certificate" if answers(remote) else f"Does not load (got {remote or 'nothing'})",
+        })
+    return checks, url
+
+
+def summarize(ok, devices, url):
+    if not ok:
+        return "Something on the laptop's side is not working. See the failed check below."
+    if any(d["answered"] for d in devices):
+        heard = ", ".join(d["name"] for d in devices if d["answered"])
+        return f"The laptop's side is working and {heard} answered. If Safari still fails, check you are opening {url}."
+    return (
+        "The laptop's side is working, but no phone answered. Open the Tailscale app on the phone, "
+        f"make sure it is connected, then reload {url}."
+    )
+
+
+def main():
+    args = set(sys.argv[1:])
+    status = tailscale_status()
+    repaired = repair(status) if "--repair" in args else []
+    if repaired:
+        time.sleep(1)
+        status = tailscale_status()
+
+    checks, url = check(status)
+    devices = phones(status) if status else []
+    ok = all(c["ok"] for c in checks)
+    result = {
+        "ok": ok,
+        "url": url,
+        "summary": summarize(ok, devices, url),
+        "checks": checks,
+        "devices": devices,
+        "repaired": repaired,
+    }
+
+    if "--json" in args:
+        print(json.dumps(result))
+        return
+    lines = [result["summary"], ""]
+    lines += [f"{'OK  ' if c['ok'] else 'FAIL'}  {c['name']}: {c['detail']}" for c in checks]
+    lines += [f"{'OK  ' if d['answered'] else '--  '}  {d['name']}: {'answered' if d['answered'] else 'did not answer (a locked phone often will not)'}" for d in devices]
+    if repaired:
+        lines += ["", "Done: " + "; ".join(repaired)]
+    if url:
+        lines += ["", f"Open on your phone: {url}"]
+    print("\n".join(lines))
+
+
+if __name__ == "__main__":
+    main()

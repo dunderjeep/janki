@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- janki's home-screen icon: Crowley's unicursal hexagram, with the
+       rose at its heart replaced by a googly-eyed one sticking its tongue out. -->
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="45%" r="70%">
+      <stop offset="0" stop-color="#3b1466"/>
+      <stop offset="1" stop-color="#10041d"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe27a"/>
+      <stop offset="1" stop-color="#e8a317"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <circle cx="256" cy="262" r="196" fill="none" stroke="#f5c542" stroke-opacity=".18" stroke-width="4"/>
+  <g fill="#ffe9a8">
+    <path d="M70 70l5 13 13 5-13 5-5 13-5-13-13-5 13-5z"/>
+    <path d="M440 64l4 10 10 4-10 4-4 10-4-10-10-4 10-4z"/>
+    <path d="M444 430l5 12 12 5-12 5-5 12-5-12-12-5 12-5z"/>
+    <path d="M62 440l4 9 9 4-9 4-4 9-4-9-9-4 9-4z"/>
+  </g>
+  <!-- unicursal hexagram: one stroke, T → LR → UL → B → UR → LL → T -->
+  <path d="M256 92 L403.2 347 L108.8 177 L256 432 L403.2 177 L108.8 347 Z"
+        fill="none" stroke="#1a0630" stroke-width="34" stroke-linejoin="round"/>
+  <path d="M256 92 L403.2 347 L108.8 177 L256 432 L403.2 177 L108.8 347 Z"
+        fill="none" stroke="url(#gold)" stroke-width="20" stroke-linejoin="round"/>
+  <!-- the rose, gone silly -->
+  <g transform="translate(256 262)">
+    <g fill="#ff4f86" stroke="#1a0630" stroke-width="5">
+      <circle cx="0" cy="-36" r="32"/>
+      <circle cx="0" cy="-36" r="32" transform="rotate(72)"/>
+      <circle cx="0" cy="-36" r="32" transform="rotate(144)"/>
+      <circle cx="0" cy="-36" r="32" transform="rotate(216)"/>
+      <circle cx="0" cy="-36" r="32" transform="rotate(288)"/>
+    </g>
+    <circle r="42" fill="#ff8fb4" stroke="#1a0630" stroke-width="5"/>
+    <!-- googly eyes, pupils wandering off in different directions -->
+    <circle cx="-17" cy="-10" r="16" fill="#fff" stroke="#1a0630" stroke-width="4"/>
+    <circle cx="19" cy="-12" r="19" fill="#fff" stroke="#1a0630" stroke-width="4"/>
+    <circle cx="-23" cy="-5" r="8" fill="#1a0630"/>
+    <circle cx="26" cy="-18" r="9" fill="#1a0630"/>
+    <!-- grin with tongue out -->
+    <path d="M-20 14 Q0 34 22 12" fill="none" stroke="#1a0630" stroke-width="5" stroke-linecap="round"/>
+    <path d="M-2 22 Q2 42 14 36 Q18 26 12 19" fill="#e0245e" stroke="#1a0630" stroke-width="4" stroke-linejoin="round"/>
+  </g>
+</svg>

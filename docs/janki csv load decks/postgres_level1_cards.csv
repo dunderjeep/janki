@@ -1,0 +1,78 @@
+front,back,tags,strict,accepted
+What is PostgreSQL (Postgres)?,An open-source relational database management system (RDBMS).,postgres;level1;concept,false,postgresql
+What does 'relational' mean in a database?,Data is stored in tables (relations) with rows and columns; tables can relate via keys.,postgres;level1;concept,false,
+What is a database (in Postgres)?,"A named container holding schemas, tables, views, functions, etc.",postgres;level1;concept,false,
+What is a schema in Postgres?,A namespace inside a database that groups objects (like tables) and avoids name collisions.,postgres;level1;concept,false,
+Default schema for most objects?,public,postgres;level1;schema,true,public schema
+What is a table?,A set of rows with the same columns (a relation).,postgres;level1;concept,false,
+What is a row?,One record/tuple in a table.,postgres;level1;concept,false,record;tuple
+What is a column?,A named field with a data type in a table.,postgres;level1;concept,false,field;attribute
+What is psql?,Postgres command-line client (interactive terminal) for running SQL.,postgres;level1;psql,false,
+psql meta-command to list databases?,\l,postgres;level1;psql,true,\list
+psql meta-command to connect to a database named mydb?,\c mydb,postgres;level1;psql,false,\connect mydb
+psql meta-command to list schemas?,\dn,postgres;level1;psql,false,
+psql meta-command to list tables (in search_path)?,\dt,postgres;level1;psql,true,\dt
+psql meta-command to describe a table named users?,\d users,postgres;level1;psql,false,\d+ users
+psql meta-command to show current user?,\conninfo,postgres;level1;psql,false,SELECT current_user;
+psql meta-command to quit?,\q,postgres;level1;psql,true,quit;exit
+"Typical psql connect flags for host, user, db?",psql -h <host> -U <user> -d <db>,postgres;level1;connect,false,psql --host <host> --username <user> --dbname <db>
+What is the default Postgres port?,5432,postgres;level1;connect,true,5432/tcp
+Environment variable commonly used for psql password?,PGPASSWORD (or use .pgpass).,postgres;level1;connect,false,pgpass;.pgpass
+SQL statement to create a database named appdb?,CREATE DATABASE appdb;,postgres;level1;ddl,false,create database appdb;
+SQL statement to drop a database named appdb?,DROP DATABASE appdb;,postgres;level1;ddl,false,drop database appdb;
+SQL statement to create a schema named sales?,CREATE SCHEMA sales;,postgres;level1;ddl,false,create schema sales;
+How to set the schema search path for your session?,"SET search_path TO schema1, schema2;",postgres;level1;schema,false,set search_path
+Common integer types in Postgres?,"smallint, integer (int), bigint.",postgres;level1;types,false,int2;int4;int8
+Common text types in Postgres?,"text, varchar(n), char(n).",postgres;level1;types,false,character varying;character
+Boolean type in Postgres?,boolean (bool).,postgres;level1;types,false,bool
+Common date/time types?,"date, time, timestamp, timestamptz.",postgres;level1;types,false,timestamp with time zone;timestamptz
+Type for exact decimal money-like values?,numeric/decimal.,postgres;level1;types,false,decimal;numeric
+SQL to create a table named users with id and email?,"CREATE TABLE users (id bigint PRIMARY KEY, email text);",postgres;level1;ddl;table,false,create table users
+What does PRIMARY KEY mean?,Unique + NOT NULL identifier for rows (also creates a unique index).,postgres;level1;constraints,false,
+What does UNIQUE mean?,All values in the column(s) must be distinct (duplicates not allowed).,postgres;level1;constraints,false,
+What does NOT NULL mean?,Column must always have a value (cannot be NULL).,postgres;level1;constraints,false,
+What does DEFAULT do?,Sets a value automatically when INSERT omits that column.,postgres;level1;constraints,false,
+What is a FOREIGN KEY?,A constraint that enforces a column references a key in another table.,postgres;level1;constraints,false,
+How do you add a new column to an existing table?,ALTER TABLE table_name ADD COLUMN col_name type;,postgres;level1;ddl,false,alter table
+How do you rename a column?,ALTER TABLE table_name RENAME COLUMN old TO new;,postgres;level1;ddl,false,rename column
+How do you drop a column?,ALTER TABLE table_name DROP COLUMN col_name;,postgres;level1;ddl,false,drop column
+"SQL to insert one row into users (id,email)?","INSERT INTO users (id, email) VALUES (1, 'a@b.com');",postgres;level1;dml;insert,false,
+SQL to update a user's email where id=1?,UPDATE users SET email='new@b.com' WHERE id=1;,postgres;level1;dml;update,false,
+SQL to delete rows from users where id=1?,DELETE FROM users WHERE id=1;,postgres;level1;dml;delete,false,
+How do you return inserted/updated rows immediately?,"Use RETURNING, e.g. INSERT ... RETURNING *;",postgres;level1;dml,false,returning
+Basic SELECT pattern (all columns)?,SELECT * FROM table_name;,postgres;level1;select,false,
+"SELECT only specific columns col1, col2?","SELECT col1, col2 FROM table_name;",postgres;level1;select,false,
+Filter rows with a condition?,"Use WHERE, e.g. SELECT ... WHERE condition;",postgres;level1;select,false,
+Sort results by a column ascending/descending?,ORDER BY col ASC|DESC,postgres;level1;select,false,order by
+Limit number of rows returned?,LIMIT n (optionally OFFSET m).,postgres;level1;select,false,limit;offset
+How do you get distinct values from a column?,SELECT DISTINCT col FROM table;,postgres;level1;select,false,
+How do you count rows in a table?,SELECT COUNT(*) FROM table;,postgres;level1;aggregate,false,count(*)
+What does GROUP BY do?,"Groups rows so you can aggregate per group (COUNT, SUM, AVG, ...).",postgres;level1;aggregate,false,
+What does an INNER JOIN return?,Only rows where the join condition matches in both tables.,postgres;level1;join,false,
+What does a LEFT JOIN return?,All rows from left table + matching rows from right (else NULLs).,postgres;level1;join,false,left outer join
+Basic join pattern between orders and users?,SELECT * FROM orders o JOIN users u ON o.user_id = u.id;,postgres;level1;join,false,inner join
+Where do join conditions usually go?,"In the ON clause (recommended), not in WHERE (for clarity).",postgres;level1;join,false,
+What is a transaction?,A group of statements that commit together or roll back together.,postgres;level1;tx,false,
+SQL to start a transaction?,BEGIN;,postgres;level1;tx,false,START TRANSACTION;
+SQL to save changes?,COMMIT;,postgres;level1;tx,true,commit;
+SQL to undo changes in a transaction?,ROLLBACK;,postgres;level1;tx,true,rollback;
+Why use transactions?,To keep data consistent when multiple changes must succeed together.,postgres;level1;tx,false,
+What is an index?,A data structure that speeds up lookups/sorts at the cost of extra storage/writes.,postgres;level1;index,false,
+Common Postgres index type for equality/range?,B-tree (default).,postgres;level1;index,false,btree
+SQL to create an index on users(email)?,CREATE INDEX users_email_idx ON users (email);,postgres;level1;index;ddl,false,create index
+SQL to create a UNIQUE index on users(email)?,CREATE UNIQUE INDEX users_email_uidx ON users (email);,postgres;level1;index;ddl,false,unique index
+Command to view a query plan?,EXPLAIN (or EXPLAIN ANALYZE).,postgres;level1;performance,false,explain analyze
+What is a view?,A saved SELECT query you can query like a table.,postgres;level1;view,false,
+SQL to create a view named active_users?,CREATE VIEW active_users AS SELECT * FROM users WHERE active=true;,postgres;level1;view;ddl,false,create view
+What is a role in Postgres?,An identity for authentication/authorization (user and/or group).,postgres;level1;security,false,
+SQL to create a role with login?,CREATE ROLE app_user WITH LOGIN PASSWORD '...';,postgres;level1;security;ddl,false,create user
+Grant SELECT on a table to a role?,GRANT SELECT ON TABLE users TO app_user;,postgres;level1;security,false,grant select
+Revoke a privilege?,REVOKE <priv> ON <object> FROM <role>;,postgres;level1;security,false,revoke
+Tool to dump a database to a file?,pg_dump,postgres;level1;backup,false,pg_dumpall (all dbs)
+Tool to restore from a plain SQL dump?,psql (or pg_restore for custom-format dumps).,postgres;level1;backup,false,pg_restore
+Command to dump a DB named appdb to appdb.sql?,pg_dump -d appdb -f appdb.sql,postgres;level1;backup,false,pg_dump --dbname appdb --file appdb.sql
+What is an extension in Postgres?,A packaged set of SQL objects that adds features to a database.,postgres;level1;extension,false,
+SQL to enable an extension (example: uuid-ossp)?,"CREATE EXTENSION ""uuid-ossp"";",postgres;level1;extension;ddl,false,create extension uuid-ossp
+Function to get current timestamp with time zone?,now(),postgres;level1;functions,false,CURRENT_TIMESTAMP
+Common function to generate random UUID (pgcrypto)?,gen_random_uuid(),postgres;level1;functions,false,uuid_generate_v4()
+How do you generate an auto-incrementing id (modern Postgres)?,Use GENERATED ALWAYS AS IDENTITY (or SERIAL older).,postgres;level1;identity,false,identity;serial

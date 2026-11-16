@@ -1,0 +1,1 @@
+ALTER TABLE "janki"."srs_decks" ADD COLUMN "active" boolean DEFAULT true NOT NULL;

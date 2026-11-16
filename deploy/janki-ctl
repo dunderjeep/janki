@@ -1,0 +1,164 @@
+#!/usr/bin/env bash
+# janki-ctl — GUI-friendly control surface for the janki stack.
+#
+# Drives both halves: the Docker services (postgres/directus/minio) and the
+# Next production server (systemd user unit `janki`). Invoked by janki.desktop,
+# but perfectly usable from a shell.
+#
+#   janki-ctl open        ensure everything is up, then open the browser
+#   janki-ctl start       start Docker stack + server
+#   janki-ctl stop        stop the server only
+#   janki-ctl stop-all    stop server AND Docker — reclaims the most RAM
+#   janki-ctl restart     restart the server
+#   janki-ctl toggle      running -> stop-all, stopped -> start
+#   janki-ctl status      status dialog
+#   janki-ctl logs        follow logs in a terminal
+#   janki-ctl rebuild     npm run build, then restart
+#   janki-ctl servers     list every listening server, across all projects
+#   janki-ctl phone       repair and test the route to janki from a phone
+set -uo pipefail
+
+REPO="${JANKI_REPO:-$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)}"
+URL="http://localhost:${JANKI_PORT:-3001}"
+# What the browser opens. Health probes stay on localhost, but sign-in must start
+# on the origin Auth.js is pinned to (the unit's AUTH_URL): the PKCE cookie is
+# set wherever sign-in begins, and Google returns to AUTH_URL — start on
+# localhost and the callback arrives cookie-less ("pkceCodeVerifier could not be
+# parsed"). Falls back to localhost if the unit pins nothing.
+OPEN_URL="$(systemctl --user show janki -p Environment --value 2>/dev/null \
+  | tr ' ' '\n' | sed -n 's/^AUTH_URL=//p')"
+OPEN_URL="${OPEN_URL:-$URL}"
+UNIT="janki"
+ICON="janki"
+
+notify() { notify-send -a janki -i "$ICON" "$1" "${2:-}"; }
+
+server_active() { systemctl --user is-active --quiet "$UNIT"; }
+
+docker_up() { ( cd "$REPO" && docker compose up -d ) >/dev/null 2>&1; }
+docker_stop() { ( cd "$REPO" && docker compose stop ) >/dev/null 2>&1; }
+
+# Poll the HTTP endpoint rather than trusting systemd's "active" — the unit is
+# up the instant node execs, several seconds before Next can actually serve.
+wait_for_http() {
+  for _ in $(seq 1 "${1:-45}"); do
+    curl -sf -o /dev/null --max-time 2 "$URL" && return 0
+    sleep 1
+  done
+  return 1
+}
+
+do_start() {
+  notify "Starting janki…" "Bringing up database and server"
+  docker_up
+  systemctl --user start "$UNIT"
+  if wait_for_http 45; then
+    notify "janki is up" "$URL"
+    return 0
+  fi
+  notify "janki failed to start" "Check: journalctl --user -u janki -n 50"
+  return 1
+}
+
+case "${1:-open}" in
+  open)
+    # Docker unconditionally, before the HTTP probe. `up -d` is a no-op on an
+    # already-running stack, and the probe cannot stand in for it: / answers
+    # with a redirect to /login whether or not postgres is behind it, so a
+    # server left running after `stop-all` sails through the check with a dead
+    # database underneath it.
+    docker_up
+    if ! curl -sf -o /dev/null --max-time 2 "$URL"; then
+      do_start || exit 1
+    fi
+    xdg-open "$OPEN_URL" >/dev/null 2>&1 &
+    ;;
+
+  start)   do_start ;;
+
+  stop)
+    systemctl --user stop "$UNIT"
+    notify "janki server stopped" "Docker services still running"
+    ;;
+
+  stop-all)
+    systemctl --user stop "$UNIT"
+    docker_stop
+    notify "janki fully stopped" "Server and Docker services down"
+    ;;
+
+  restart)
+    systemctl --user restart "$UNIT"
+    if wait_for_http 45; then notify "janki restarted" "$URL"
+    else notify "janki failed to restart" "Check the logs"; fi
+    ;;
+
+  toggle)
+    if server_active; then exec "$0" stop-all; else exec "$0" start; fi
+    ;;
+
+  status)
+    if server_active; then
+      mem=$(systemctl --user show "$UNIT" -p MemoryCurrent --value)
+      # MemoryCurrent is bytes, or the sentinel [not set] when unavailable
+      if [[ "$mem" =~ ^[0-9]+$ ]]; then
+        mem="$(awk -v b="$mem" 'BEGIN{printf "%.0f MB", b/1048576}')"
+      else
+        mem="n/a"
+      fi
+      since=$(systemctl --user show "$UNIT" -p ActiveEnterTimestamp --value)
+      http=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "$URL" || echo "no response")
+      state="<b>Server:</b> running ($mem)\n<b>Since:</b> ${since:-unknown}\n<b>HTTP:</b> $http"
+    else
+      state="<b>Server:</b> stopped"
+    fi
+
+    containers=$( ( cd "$REPO" && docker compose ps --format '{{.Service}}: {{.State}}' ) 2>/dev/null \
+                  | sed 's/^/  /' )
+    [[ -z "$containers" ]] && containers="  (none running)"
+
+    zenity --info --width=380 --title="janki" \
+      --text="$state\n\n<b>Docker:</b>\n$containers\n\n<b>URL:</b> $URL" 2>/dev/null
+    ;;
+
+  logs)
+    exec gnome-terminal --title="janki logs" -- \
+      bash -c "journalctl --user -u $UNIT -f -n 100; exec bash"
+    ;;
+
+  rebuild)
+    # A rebuild restarts the server, so it needs the database up for the same
+    # reason a start does — otherwise the new build boots onto nothing.
+    docker_up
+    exec gnome-terminal --title="janki rebuild" -- bash -c "
+      cd '$REPO/app' || exit 1
+      echo '==> Building janki…'
+      if npm run build:prod; then
+        systemctl --user restart '$UNIT'
+        notify-send -a janki -i '$ICON' 'janki rebuilt' 'Server restarted'
+        echo; echo '==> Done. Server restarted.'
+      else
+        notify-send -a janki -i '$ICON' -u critical 'janki build failed' 'See terminal'
+        echo; echo '==> BUILD FAILED.'
+      fi
+      echo 'Press enter to close.'; read -r"
+    ;;
+
+  servers)
+    # Cross-project view: which servers are listening, and on what.
+    # shift first so flags like --list reach dev-servers instead of being eaten.
+    shift
+    exec "$(dirname "$(readlink -f "$0")")/dev-servers" "$@"
+    ;;
+
+  phone)
+    notify "Checking phone access…" "This takes a few seconds"
+    report=$("$(dirname "$(readlink -f "$0")")/phone-access" --repair)
+    zenity --info --no-markup --width=520 --title="janki phone access" --text="$report" 2>/dev/null
+    ;;
+
+  *)
+    echo "usage: $(basename "$0") {open|start|stop|stop-all|restart|toggle|status|logs|rebuild|servers|phone}" >&2
+    exit 2
+    ;;
+esac

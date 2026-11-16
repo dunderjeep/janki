@@ -1,0 +1,300 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1773007501886,
+      "tag": "0000_bumpy_jack_murdock",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1773575296851,
+      "tag": "0001_glamorous_nebula",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773922395836,
+      "tag": "0002_silky_tiger_shark",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1773931612929,
+      "tag": "0003_polite_vision",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1774048271732,
+      "tag": "0004_jazzy_chronomancer",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1774113196383,
+      "tag": "0005_bouncy_omega_red",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1774177636301,
+      "tag": "0006_striped_imperial_guard",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1774180236000,
+      "tag": "0007_topics_dag",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1775322386000,
+      "tag": "0008_courses",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1775328816000,
+      "tag": "0009_reading_content",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1778495623000,
+      "tag": "0010_bluesky_nullable_email",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1786425200000,
+      "tag": "0011_activity_streaks",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1786429257417,
+      "tag": "0012_align_constraint_names",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789300000000,
+      "tag": "0013_banki",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791600000000,
+      "tag": "0014_bokki",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1794200000000,
+      "tag": "0015_porcupin",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794800000000,
+      "tag": "0016_scatterbrain",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1795400000000,
+      "tag": "0017_scatterbrain_targets",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1796000000000,
+      "tag": "0018_jobbi",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1796600000000,
+      "tag": "0019_jobbi_drafts",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1797200000000,
+      "tag": "0020_dough",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1797800000000,
+      "tag": "0021_jobbi_chat_facts",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1798400000000,
+      "tag": "0022_dough_links",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1799000000000,
+      "tag": "0023_jobbi_map",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1799600000000,
+      "tag": "0024_jobbi_category",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1800200000000,
+      "tag": "0025_jobbi_dismissed",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1800800000000,
+      "tag": "0026_jobbi_parked",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1801400000000,
+      "tag": "0027_jobbi_snooze_notes",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1802000000000,
+      "tag": "0028_jobbi_search_filters",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1802600000000,
+      "tag": "0029_front_files_and_recipes",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1803200000000,
+      "tag": "0030_rename_jobbi_to_joblowski",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1803300000000,
+      "tag": "0031_scatterbrain_last_place",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1803400000000,
+      "tag": "0032_nutrilabel",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1803500000000,
+      "tag": "0033_nutrilabel_norway",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1803600000000,
+      "tag": "0034_notes",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1803700000000,
+      "tag": "0035_notes_labels_mirror",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1803800000000,
+      "tag": "0036_notes_node_org_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1803900000000,
+      "tag": "0037_mail",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1804000000000,
+      "tag": "0038_mail_process",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1804100000000,
+      "tag": "0039_mail_removed",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1804200000000,
+      "tag": "0040_joblowski_boards_editable",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1804300000000,
+      "tag": "0041_quilt_positions",
+      "breakpoints": true
+    }
+  ]
+}

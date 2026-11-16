@@ -1,0 +1,13 @@
+{
+  "name": "janki-workspace",
+  "private": true,
+  "license": "MIT",
+  "workspaces": [
+    "app",
+    "app-kit",
+    "joblowski",
+    "mail",
+    "notes",
+    "nutrilabel"
+  ]
+}

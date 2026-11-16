@@ -1,0 +1,34 @@
+{
+  "name": "notes",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Org-style notes as private ATProto records in Postgres: outline, TODOs, agenda, links and backlinks, search.",
+  "type": "module",
+  "exports": {
+    "./api": "./src/api.ts",
+    "./server": "./src/server.ts",
+    "./org": "./src/lib/org.ts",
+    "./types": "./src/lib/types.ts",
+    "./mirror": "./src/mirror.ts"
+  },
+  "dependencies": {
+    "@janki/app-kit": "*",
+    "drizzle-orm": "^0.45.1"
+  },
+  "peerDependencies": {
+    "next": ">=15"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "pg": "^8.20.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "node --import tsx --test test/*.test.ts",
+    "roundtrip": "tsx test/roundtrip.ts",
+    "import-org": "tsx scripts/import-org.ts"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "name": "nutrilabel",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Nutrition tables and package labels from your recipes, for Canada and Norway. Runs inside a host app or on its own.",
+  "type": "module",
+  "exports": {
+    "./api": "./src/api.ts",
+    "./server": "./src/server.ts",
+    "./schema": "./src/schema.ts",
+    "./engine": "./src/engine.ts",
+    "./ui": "./src/ui/index.ts"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.11",
+    "@janki/app-kit": "*",
+    "drizzle-orm": "^0.45.1",
+    "nanoid": "^5.1.6",
+    "next": "15.5.12",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "peerDependencies": {
+    "next": ">=15",
+    "react": ">=19",
+    "react-dom": ">=19"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.27",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^3.4.19",
+    "tsx": "^4.19.0",
+    "typescript": "^5"
+  },
+  "scripts": {
+    "dev": "next dev --turbopack --hostname 127.0.0.1 --port 3211",
+    "build": "next build --turbopack",
+    "start": "next start --hostname 127.0.0.1 --port 3211",
+    "typecheck": "tsc --noEmit -p .",
+    "test": "node --import tsx --test test/*.test.ts"
+  }
+}

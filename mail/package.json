@@ -1,0 +1,36 @@
+{
+  "name": "mail",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Any IMAP mailbox: a searchable copy of the folders you choose, kept in step both ways (read, archive, delete), and hooks for other apps.",
+  "type": "module",
+  "exports": {
+    "./api": "./src/api.ts",
+    "./server": "./src/server.ts",
+    "./ui": "./src/ui/index.ts"
+  },
+  "dependencies": {
+    "@janki/app-kit": "*",
+    "drizzle-orm": "^0.45.1",
+    "imapflow": "2.9.1",
+    "mailparser": "3.14.1",
+    "nanoid": "^5.1.6"
+  },
+  "peerDependencies": {
+    "next": ">=15",
+    "react": ">=19",
+    "react-dom": ">=19"
+  },
+  "devDependencies": {
+    "@types/mailparser": "^3.4.0",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "tsx": "^4.19.0",
+    "typescript": "^5"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "node --import tsx --test test/*.test.ts"
+  }
+}

@@ -1,0 +1,202 @@
+#!/usr/bin/env bash
+# dev-servers -- show every local server that is listening, across all projects,
+# and optionally stop the ones you don't want.
+#
+# The problem this solves: a dev server started in the background is invisible.
+# You see "localhost:3000" and cannot tell which project owns it, or that a
+# second one is quietly running on 3001. A port number identifies nothing; the
+# working directory does. So this reports cwd, not just the port.
+#
+# Covers both halves of the picture:
+#   - listening TCP sockets owned by your user (next/vite/python/... dev servers)
+#   - published Docker container ports, which hold a port with no visible PID
+#     because docker-proxy runs as root and `ss` cannot attribute it for us
+#
+#   dev-servers          GUI picker (the dock's "Dev servers" action)
+#   dev-servers --list   plain text, for a terminal
+set -uo pipefail
+
+# rows are TAB separated: TYPE  PORT  PROJECT  PID/NAME  RAM  DETAIL  STARTEDBY
+#
+# STARTEDBY is the SUPERVISOR - the ancestor that will restart the listener if
+# you kill it. `next dev` runs the actual server as a child, so stopping the
+# thing holding the port just makes the parent spawn a fresh one, which then
+# recompiles and climbs back to the same memory. Killing the listener looks like
+# the server is immortal. This finds the process actually in charge.
+
+# Walk up from a listener to the process that supervises it. Stops at the shell,
+# terminal or editor that launched the whole thing - those are yours, not the
+# server's.
+supervisor_of() {
+  local pid=$1 parent cmd
+  while :; do
+    parent=$(awk '/^PPid:/{print $2}' "/proc/$pid/status" 2>/dev/null)
+    [[ -z "$parent" || "$parent" == 0 || "$parent" == 1 ]] && break
+    cmd=$(tr '\0' ' ' < "/proc/$parent/cmdline" 2>/dev/null)
+    [[ -z "$cmd" ]] && break
+    # The chain ends at whatever a person drove: a shell, a terminal, an editor.
+    [[ "$cmd" =~ (^| )(bash|zsh|fish|sh)( |$) && ! "$cmd" =~ -c ]] && break
+    case "$cmd" in
+      *gnome-terminal*|*konsole*|*tmux*|*/code*|*systemd*|*claude*) break ;;
+    esac
+    # Anything that runs a dev server is part of the server, not its audience.
+    [[ "$cmd" =~ (next|vite|nuxt|webpack|npm|pnpm|yarn|bun|node|sh -c) ]] || break
+    pid=$parent
+  done
+  echo "$pid"
+}
+
+collect_processes() {
+  # `ss -Hltnp` emits 5 fields when a socket has no visible owner and 6 when it
+  # does: State Recv-Q Send-Q Local Peer [Process]
+  ss -Hltnp 2>/dev/null | while read -r _ _ _ local _ users; do
+    port="${local##*:}"
+    [[ "$port" =~ ^[0-9]+$ ]] || continue
+    [[ "$users" =~ pid=([0-9]+) ]] || continue
+    pid="${BASH_REMATCH[1]}"
+
+    cmd=$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null)
+    [[ -z "$cmd" ]] && continue
+
+    # Electron/VS Code helpers bind random high ports; pure noise here.
+    [[ "$cmd" == *"--type=utility"* || "$cmd" == *"--type=renderer"* ]] && continue
+
+    # Keep real dev servers, plus anything on a port a human would type.
+    if (( port >= 10000 )) && \
+       ! [[ "$cmd" =~ (node|next|vite|nuxt|webpack|python|flask|django|rails|puma|php|deno|bun|http-server|serve) ]]; then
+      continue
+    fi
+
+    cwd=$(readlink "/proc/$pid/cwd" 2>/dev/null)
+    # Name the owner by project directory -- the bit that actually identifies it.
+    case "$cwd" in
+      */Projects/Code/*) owner=${cwd#*/Projects/Code/}; owner=${owner%%/*} ;;
+      "")                owner="?" ;;
+      *)                 owner=$(basename "$cwd") ;;
+    esac
+
+    rss=$(awk '/^VmRSS:/{printf "%.0f MB", $2/1024}' "/proc/$pid/status" 2>/dev/null)
+    name=$(tr -d '\0' < "/proc/$pid/comm" 2>/dev/null)
+    sup=$(supervisor_of "$pid")
+    if [[ "$sup" != "$pid" ]]; then
+      supcmd=$(tr '\0' ' ' < "/proc/$sup/cmdline" 2>/dev/null | cut -c1-40)
+      started="$sup · ${supcmd:-?}"
+    else
+      started="$pid (no parent)"
+    fi
+    printf 'process\t%s\t%s\t%s\t%s\t%s\t%s\n' "$port" "$owner" "$pid" "${rss:-?}" "${name:-?}" "$started"
+  # -u on the port key collapses the duplicate IPv4/IPv6 row for one listener.
+  done | sort -t$'\t' -k2,2n -u
+}
+
+collect_docker() {
+  command -v docker >/dev/null 2>&1 || return 0
+  docker ps --format '{{.Names}}\t{{.Ports}}\t{{.Image}}\t{{.Label "com.docker.compose.project"}}' 2>/dev/null | \
+  while IFS=$'\t' read -r name ports image project; do
+    # "0.0.0.0:5433->5432/tcp, [::]:5433->5432/tcp" -> 5433
+    host_ports=$(grep -oE '0\.0\.0\.0:[0-9]+' <<<"$ports" | cut -d: -f2 | sort -nu | paste -sd, -)
+    [[ -z "$host_ports" ]] && host_ports="-"
+    printf 'docker\t%s\t%s\t%s\t%s\t%s\t%s\n' "$host_ports" "${project:-$name}" "$name" "-" "$image" "docker"
+  done | sort -t$'\t' -k2,2n
+}
+
+rows=$( { collect_processes; collect_docker; } )
+
+if [[ -z "$rows" ]]; then
+  if [[ "${1:-}" == "--list" ]]; then echo "Nothing is listening."
+  else zenity --info --title="Dev servers" --text="Nothing is listening." 2>/dev/null; fi
+  exit 0
+fi
+
+if [[ "${1:-}" == "--list" ]]; then
+  printf '%-8s %-7s %-12s %-10s %-9s %-18s %s\n' TYPE PORT PROJECT PID RAM DETAIL STARTED-BY
+  printf '%-8s %-7s %-12s %-10s %-9s %-18s %s\n' -------- ------- ------------ ---------- --------- ------------------ ----------
+  printf '%s\n' "$rows" | while IFS=$'\t' read -r t p o i r d sb; do
+    printf '%-8s %-7s %-12s %-10s %-9s %-18s %s\n' "$t" "$p" "$o" "$i" "$r" "$d" "$sb"
+  done
+  exit 0
+fi
+
+# Flatten to zenity's positional arg list: checkbox, then one arg per column.
+args=()
+declare -A META   # ident -> type<TAB>port<TAB>startedby, so the dialog only has
+                  # to hand back one unambiguous value.
+while IFS=$'\t' read -r t p o i r d sb; do
+  args+=(FALSE "$p" "$o" "$t" "$i" "$r" "$d" "$sb")
+  META["$i"]="$t"$'\t'"$p"$'\t'"$sb"
+done <<<"$rows"
+
+sel=$(zenity --list --checklist --width=980 --height=470 \
+  --title="Dev servers" \
+  --text="Everything listening right now. Tick anything you want to stop." \
+  --column="Stop" --column="Port" --column="Project" --column="Type" \
+  --column="PID/Name" --column="RAM" --column="Detail" --column="Started by" \
+  --print-column=5 --separator=$'\n' \
+  "${args[@]}" 2>/dev/null) || exit 0
+
+[[ -z "$sel" ]] && exit 0
+
+summary=""
+while IFS= read -r ident; do
+  [[ -z "$ident" ]] && continue
+  IFS=$'\t' read -r t p sb <<<"${META[$ident]:-}"
+  summary+="  port ${p:-?}  ($t $ident)"$'\n'
+done <<<"$sel"
+zenity --question --width=430 --title="Stop these?" \
+  --text="About to stop:\n\n$summary" 2>/dev/null || exit 0
+
+# Stop one pid properly: TERM, wait, then KILL.
+stop_pid() {
+  local pid=$1
+  kill "$pid" 2>/dev/null
+  for _ in 1 2 3 4 5; do kill -0 "$pid" 2>/dev/null || return 0; sleep 0.4; done
+  kill -9 "$pid" 2>/dev/null
+  return 1
+}
+
+report=""
+restartable=()   # cwd<TAB>command, for anything we can put back
+while IFS= read -r ident; do
+  [[ -z "$ident" ]] && continue
+  IFS=$'\t' read -r type port started <<<"${META[$ident]:-}"
+  if [[ -z "$type" ]]; then report+="could not identify $ident\n"; continue; fi
+  if [[ "$type" == "docker" ]]; then
+    if docker stop "$ident" >/dev/null 2>&1; then report+="stopped container $ident (port $port)\n"
+    else report+="FAILED to stop container $ident\n"; fi
+    continue
+  fi
+
+  # The supervisor first, or it simply spawns another listener and the memory
+  # comes straight back. "$started" looks like "136767 · npm run dev".
+  sup="${started%% *}"
+  if [[ "$sup" =~ ^[0-9]+$ && "$sup" != "$ident" ]] && kill -0 "$sup" 2>/dev/null; then
+    # Remember how to start it again BEFORE killing it - /proc goes away with it.
+    supcwd=$(readlink "/proc/$sup/cwd" 2>/dev/null)
+    supcmd=$(tr '\0' ' ' < "/proc/$sup/cmdline" 2>/dev/null)
+    [[ -n "$supcwd" && -n "$supcmd" ]] && restartable+=("$supcwd	$supcmd	$port")
+    stop_pid "$sup" && report+="stopped $sup ($started) and its server on port $port\n" \
+                    || report+="force-killed $sup ($started), port $port\n"
+  fi
+
+  # Then the listener itself, in case it outlived its parent.
+  if kill -0 "$ident" 2>/dev/null; then
+    stop_pid "$ident" && report+="stopped pid $ident (port $port)\n" \
+                      || report+="force-killed pid $ident (port $port)\n"
+  fi
+done <<<"$sel"
+
+if ((${#restartable[@]})); then
+  list=$(printf '%s\n' "${restartable[@]}" | awk -F'\t' '{printf "  port %s: %s\n           in %s\n", $3, $2, $1}')
+  if zenity --question --width=520 --title="Restart?" \
+       --text="Stopped. Start these again?\n\n$list" 2>/dev/null; then
+    for entry in "${restartable[@]}"; do
+      IFS=$'\t' read -r cwd cmd port <<<"$entry"
+      log="/tmp/dev-server-$port.log"
+      # setsid so it outlives this script and does not die with the dialog.
+      setsid bash -c "cd '$cwd' && exec $cmd" >"$log" 2>&1 &
+      report+="restarted port $port · log: $log\n"
+    done
+  fi
+fi
+
+zenity --info --width=520 --title="Dev servers" --text="$(printf "$report")" 2>/dev/null
